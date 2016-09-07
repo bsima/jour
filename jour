@@ -1,0 +1,105 @@
+#!/usr/bin/env python3.5
+
+import argparse 
+import datetime
+import logging 
+import os
+import subprocess
+import sys
+
+
+logging.basicConfig(
+    level=logging.WARNING,
+    format='%(levelname)s %(funcName)s %(lineno)s - %(message)s',
+    stream=sys.stderr
+)
+
+logging.debug(['sys.argv', sys.argv])
+
+
+editor = os.environ.get('EDITOR', '/usr/bin/vi')
+pager = os.environ.get('PAGER', '/bin/more')
+journal_dir = os.environ.get('JOURNAL_DIR', '/me/journal') 
+
+# Check that journal exists
+if not os.path.exists(journal_dir):
+    raise NotADirectoryError("{0} does not exist.".format(journal_dir))
+
+
+class Entry(object):
+    """
+    Represents a journal entry.
+    """
+    def __init__(self, date):
+        self.date = date
+        self.path = "{0:s}/{1}".format(journal_dir, date)
+
+
+def date(dt):
+    "Takes a datetime object and returns a string formatted an entry."
+    fmt = lambda n: "{0:02d}".format(n)
+    s = list(map(fmt, [dt.year, dt.month, dt.day]))
+    return '.'.join(s)
+
+
+class dateAction(argparse.Action):
+    "TODO"
+    def __init__(self, option_strings, dest, **kwargs):
+        pass
+
+    def __call__(self, parser, namespace, values, option_string):
+        pass
+
+## Commands ###################################################################
+
+
+def list_entries(args):
+    entries = os.listdir(journal_dir)
+    for entry in sorted(entries):
+        print(entry)
+
+
+def read_entry(args):
+    e = Entry(args.date)
+    print(e.path)
+    print(pager)
+    subprocess.call([pager, e.path])
+
+
+def write_entry(args):
+    e = Entry(args.date)
+    subprocess.call([editor, e.path])
+
+
+
+## CLI #######################################################################
+
+cli = argparse.ArgumentParser(
+    description="""
+    Write, read, and edit your journal. Calling jour with no arguments will
+    open today's journal entry for writing.
+    """
+)
+
+cli.add_argument(
+    '-d',
+    '--date',
+    default=date(datetime.datetime.now()),
+    help="Set the date for the entry. Defaults to today."
+)
+
+commands = cli.add_subparsers(dest="command")
+
+ls = commands.add_parser('ls')
+ls.set_defaults(command=list_entries)
+
+read = commands.add_parser('read')
+read.set_defaults(command=read_entry)
+
+
+if __name__ == '__main__':
+    args = cli.parse_args()
+    if not args.command:
+        write_entry(args)   
+    else:
+        args.command(args)
