@@ -1,5 +1,22 @@
 #!/usr/bin/env python3.5
 
+__doc__ = \
+"""
+Write, read, and edit your journal. Calling jour with no arguments will open
+today's journal entry for writing.
+
+jour relies on a few environment variables:
+
+    $EDITOR - for editing a journal entries. Default: /usr/bin/vi
+
+    $PAGER - for reading journal entries. Default: /bin/more
+
+    $JOURNAL_DIR - the directory to store your journal entries.
+
+The default naming schema for new entries is <year>.<month>.<day> with each
+number zero-padded properly. Currently there is no option to change this.
+"""
+
 import argparse 
 import datetime
 import logging 
@@ -75,10 +92,8 @@ def write_entry(args):
 ## CLI #######################################################################
 
 cli = argparse.ArgumentParser(
-    description="""
-    Write, read, and edit your journal. Calling jour with no arguments will
-    open today's journal entry for writing.
-    """
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    description=__doc__
 )
 
 cli.add_argument(
