@@ -7,11 +7,14 @@ today's journal entry for writing.
 
 jour relies on a few environment variables:
 
-    $EDITOR - for editing a journal entries. Default: /usr/bin/vi
+    $EDITOR - for editing a journal entries.
+        Default: /usr/bin/vi
 
-    $PAGER - for reading journal entries. Default: /bin/more
+    $PAGER - for reading journal entries.
+        Default: /bin/more
 
     $JOURNAL_DIR - the directory to store your journal entries.
+        Default: ~/journal
 
 The default naming schema for new entries is <year>.<month>.<day> with each
 number zero-padded properly. Currently there is no option to change this.
@@ -21,6 +24,7 @@ import argparse
 import datetime
 import logging 
 import os
+from os.path import expanduser
 import subprocess
 import sys
 
@@ -33,10 +37,9 @@ logging.basicConfig(
 
 logging.debug(['sys.argv', sys.argv])
 
-
 editor = os.environ.get('EDITOR', '/usr/bin/vi')
 pager = os.environ.get('PAGER', '/bin/more')
-journal_dir = os.environ.get('JOURNAL_DIR', '/me/journal') 
+journal_dir = os.environ.get('JOURNAL_DIR', expanduser("~/journal"))
 
 # Check that journal exists
 if not os.path.exists(journal_dir):
