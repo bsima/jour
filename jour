@@ -20,9 +20,9 @@ The default naming schema for new entries is <year>.<month>.<day> with each
 number zero-padded properly. Currently there is no option to change this.
 """
 
-import argparse 
+import argparse
 import datetime
-import logging 
+import logging
 import os
 from os.path import expanduser
 import subprocess
@@ -41,10 +41,24 @@ editor = os.environ.get('EDITOR', '/usr/bin/vi')
 pager = os.environ.get('PAGER', '/bin/more')
 journal_dir = os.environ.get('JOURNAL_DIR', expanduser("~/journal"))
 
-# Check that journal exists
-if not os.path.exists(journal_dir):
-    raise NotADirectoryError("{0} does not exist.".format(journal_dir))
 
+def askToMakeDir(retries=4, reminder='Please try again!'):
+    while True:
+        ok = input('Can not find journal dir. Wanna make it? ')
+        if ok in ('y', 'ye', 'yes', 'Y'):
+            os.makedirs(journal_dir)
+            return True
+        if ok in ('n', 'no', 'nop', 'nope', 'N'):
+            raise NotADirectoryError("{0} does not exist.".format(journal_dir))
+            return False
+        retries = retries - 1
+        if retries < 0:
+            raise ValueError('invalid user response')
+        print(reminder)
+
+def check():
+  if not os.path.exists(journal_dir):
+    askToMakeDir()
 
 class Entry(object):
     """
@@ -118,6 +132,7 @@ read.set_defaults(command=read_entry)
 if __name__ == '__main__':
     args = cli.parse_args()
     if not args.command:
-        write_entry(args)   
+        check()
+        write_entry(args)
     else:
         args.command(args)
