@@ -21,6 +21,7 @@ number zero-padded properly. Currently there is no option to change this.
 """
 
 import argparse
+import configparser
 import datetime
 import logging
 import os
@@ -37,12 +38,15 @@ logging.basicConfig(
 
 logging.debug(['sys.argv', sys.argv])
 
-editor = os.environ.get('EDITOR', '/usr/bin/vi')
-pager = os.environ.get('PAGER', '/bin/more')
-journal_dir = os.environ.get('JOURNAL_DIR', expanduser("~/journal"))
+EDITOR = os.environ.get('EDITOR', '/usr/bin/vi')
+PAGER = os.environ.get('PAGER', '/bin/more')
+JOURNAL_DIR = os.environ.get('JOURNAL_DIR', expanduser("~/journal"))
+CONFIG_DIR = os.environ.get('XDG_CONFIG_HOME', expanduser("~/.config"))
+CONFIG_FILE_NAME = 'jour.conf'
+DEFAULT_FORMAT = '{y}.{m}.{d}'
 
 
-def askToMakeDir(retries=4, reminder='Please try again!'):
+def askToMakeDir(journal_dir, retries=4, reminder='Please try again!'):
     while True:
         ok = input('Can not find journal dir. Wanna make it? ')
         if ok in ('y', 'ye', 'yes', 'Y'):
@@ -56,24 +60,25 @@ def askToMakeDir(retries=4, reminder='Please try again!'):
             raise ValueError('invalid user response')
         print(reminder)
 
-def check():
+def check(journal_dir):
   if not os.path.exists(journal_dir):
-    askToMakeDir()
+    askToMakeDir(journal_dir)
 
 class Entry(object):
     """
     Represents a journal entry.
     """
-    def __init__(self, date):
+    def __init__(self, date, journal_dir):
         self.date = date
-        self.path = "{0:s}/{1}".format(journal_dir, date)
+        self.path = os.path.join(os.sep, journal_dir, date)
 
 
-def date(dt):
+def date(dt, conf):
     "Takes a datetime object and returns a string formatted an entry."
     fmt = lambda n: "{0:02d}".format(n)
     s = list(map(fmt, [dt.year, dt.month, dt.day]))
-    return '.'.join(s)
+    format_string = get_config_option(conf, 'filename_format')
+    return format_string.format(y=s[0], m=s[1], d=s[2])
 
 
 class dateAction(argparse.Action):
@@ -84,29 +89,69 @@ class dateAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         pass
 
+
+def load_config(config_file=None):
+    """
+    Load a configuration file and return a config parser (i.e. dictionary) with
+    the settings.
+    """
+    # Set default config options
+    config = configparser.ConfigParser(defaults={
+        'filename_format': DEFAULT_FORMAT,
+        'journal_dir': JOURNAL_DIR,
+        'editor': EDITOR,
+        'pager': PAGER
+    })
+
+    if config_file is None:
+        config_file = os.path.join(os.sep, CONFIG_DIR, CONFIG_FILE_NAME)
+    config.read(config_file)
+
+    return config
+
+
+def get_config_option(conf, key):
+    """
+    Get a configuration option from the config dictionary.
+
+    Uses either the main section (if it exists) or the DEFAULT section if there
+    is no main section. Will raise an exception if the key isn't found.
+    """
+    if 'main' in conf:
+        return conf['main'].get(key)
+    else:
+        return conf['DEFAULT'].get(key)
+
 ## Commands ###################################################################
 
 
-def list_entries(args):
+def list_entries(args, conf):
+    journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
     for entry in sorted(entries):
         print(entry)
 
 
-def read_entry(args):
-    e = Entry(args.date)
+def read_entry(args, conf):
+    journal_dir = get_config_option(conf, 'journal_dir')
+    pager = get_config_option(conf, 'pager')
+    e = Entry(args.date, journal_dir)
     print(e.path)
     print(pager)
     subprocess.call([pager, e.path])
 
 
-def write_entry(args):
-    e = Entry(args.date)
+def write_entry(args, conf):
+    journal_dir = get_config_option(conf, 'journal_dir')
+    editor = get_config_option(conf, 'editor')
+    e = Entry(args.date, journal_dir)
     subprocess.call([editor, e.path])
 
 
 
 ## CLI #######################################################################
+
+conf = load_config()
 
 cli = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -116,7 +161,7 @@ cli = argparse.ArgumentParser(
 cli.add_argument(
     '-d',
     '--date',
-    default=date(datetime.datetime.now()),
+    default=date(datetime.datetime.now(), conf),
     help="Set the date for the entry. Defaults to today."
 )
 
@@ -132,7 +177,7 @@ read.set_defaults(command=read_entry)
 if __name__ == '__main__':
     args = cli.parse_args()
     if not args.command:
-        check()
-        write_entry(args)
+        check(get_config_option(conf, 'journal_dir'))
+        write_entry(args, conf)
     else:
-        args.command(args)
+        args.command(args, conf)
