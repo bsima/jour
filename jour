@@ -90,18 +90,24 @@ def list_entries(args):
     entries = os.listdir(journal_dir)
     for entry in sorted(entries):
         print(entry)
+    exit(0)
 
 
 def read_entry(args):
     e = Entry(args.date)
-    print(e.path)
-    print(pager)
-    subprocess.call([pager, e.path])
+    if not os.path.exists(e.path):
+        print("You haven't journaled yet today!")
+        exit(1)
+    else:
+        print(e.path)
+        subprocess.call([pager, e.path])
+        exit(0)
 
 
 def write_entry(args):
     e = Entry(args.date)
     subprocess.call([editor, e.path])
+    exit(0)
 
 
 
