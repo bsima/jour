@@ -72,8 +72,7 @@ class Entry(object):
 def date(dt):
     "Takes a datetime object and returns a string formatted as an entry."
     fmt = lambda n: "{0:02d}".format(n)
-    s = list(map(fmt, [dt.year, dt.month, dt.day]))
-    return '.'.join(s)
+    return '.'.join((fmt(d) for d in [dt.year, dt.month, dt.day]))
 
 
 class dateAction(argparse.Action):
