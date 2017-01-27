@@ -70,7 +70,7 @@ class Entry(object):
 
 
 def date(dt):
-    "Takes a datetime object and returns a string formatted an entry."
+    "Takes a datetime object and returns a string formatted as an entry."
     fmt = lambda n: "{0:02d}".format(n)
     s = list(map(fmt, [dt.year, dt.month, dt.day]))
     return '.'.join(s)
