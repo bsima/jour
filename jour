@@ -35,7 +35,6 @@ logging.basicConfig(
     stream=sys.stderr
 )
 
-logging.debug(['sys.argv', sys.argv])
 
 editor = os.environ.get('EDITOR', '/usr/bin/vi')
 pager = os.environ.get('PAGER', '/bin/more')
