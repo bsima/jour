@@ -1,4 +1,12 @@
 #!/usr/bin/env python3.5
+import argparse
+import configparser
+import datetime
+import logging
+import os
+from os.path import expanduser
+import subprocess
+import sys
 
 __doc__ = \
 """
@@ -20,16 +28,6 @@ The default naming schema for new entries is <year>.<month>.<day> with each
 number zero-padded properly. Currently there is no option to change this.
 """
 
-import argparse
-import configparser
-import datetime
-import logging
-import os
-from os.path import expanduser
-import subprocess
-import sys
-
-
 logging.basicConfig(
     level=logging.WARNING,
     format='%(levelname)s %(funcName)s %(lineno)s - %(message)s',
@@ -46,6 +44,24 @@ CONFIG_FILE_NAME = 'jour.conf'
 DEFAULT_FORMAT = '{y}.{m}.{d}'
 
 
+class Entry(object):
+    """
+    Represents a journal entry.
+    """
+    def __init__(self, date, journal_dir):
+        self.date = date
+        self.path = os.path.join(os.sep, journal_dir, date)
+
+
+class dateAction(argparse.Action):
+    "TODO"
+    def __init__(self, option_strings, dest, **kwargs):
+        pass
+
+    def __call__(self, parser, namespace, values, option_string):
+        pass
+
+
 def askToMakeDir(journal_dir, retries=4, reminder='Please try again!'):
     while True:
         ok = input('Can not find journal dir. Wanna make it? ')
@@ -60,34 +76,20 @@ def askToMakeDir(journal_dir, retries=4, reminder='Please try again!'):
             raise ValueError('invalid user response')
         print(reminder)
 
-def check(journal_dir):
-  if not os.path.exists(journal_dir):
-    askToMakeDir(journal_dir)
 
-class Entry(object):
-    """
-    Represents a journal entry.
-    """
-    def __init__(self, date, journal_dir):
-        self.date = date
-        self.path = os.path.join(os.sep, journal_dir, date)
+def check(journal_dir):
+    if not os.path.exists(journal_dir):
+        askToMakeDir(journal_dir)
 
 
 def date(dt, conf):
     "Takes a datetime object and returns a string formatted an entry."
-    fmt = lambda n: "{0:02d}".format(n)
+    def fmt(n):
+        return "{0:02d}".format(n)
+
     s = list(map(fmt, [dt.year, dt.month, dt.day]))
     format_string = get_config_option(conf, 'filename_format')
     return format_string.format(y=s[0], m=s[1], d=s[2])
-
-
-class dateAction(argparse.Action):
-    "TODO"
-    def __init__(self, option_strings, dest, **kwargs):
-        pass
-
-    def __call__(self, parser, namespace, values, option_string):
-        pass
 
 
 def load_config(config_file=None):
@@ -122,9 +124,8 @@ def get_config_option(conf, key):
     else:
         return conf['DEFAULT'].get(key)
 
-## Commands ###################################################################
 
-
+# Commands ###################################################################
 def list_entries(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
@@ -148,36 +149,36 @@ def write_entry(args, conf):
     subprocess.call([editor, e.path])
 
 
+# CLI #######################################################################
+def main():
+    conf = load_config()
 
-## CLI #######################################################################
+    cli = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=__doc__
+    )
 
-conf = load_config()
+    cli.add_argument(
+        '-d',
+        '--date',
+        default=date(datetime.datetime.now(), conf),
+        help="Set the date for the entry. Defaults to today."
+    )
 
-cli = argparse.ArgumentParser(
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    description=__doc__
-)
+    commands = cli.add_subparsers(dest="command")
 
-cli.add_argument(
-    '-d',
-    '--date',
-    default=date(datetime.datetime.now(), conf),
-    help="Set the date for the entry. Defaults to today."
-)
+    ls = commands.add_parser('ls')
+    ls.set_defaults(command=list_entries)
 
-commands = cli.add_subparsers(dest="command")
+    read = commands.add_parser('read')
+    read.set_defaults(command=read_entry)
 
-ls = commands.add_parser('ls')
-ls.set_defaults(command=list_entries)
-
-read = commands.add_parser('read')
-read.set_defaults(command=read_entry)
-
-
-if __name__ == '__main__':
     args = cli.parse_args()
     if not args.command:
         check(get_config_option(conf, 'journal_dir'))
         write_entry(args, conf)
     else:
         args.command(args, conf)
+
+if __name__ == '__main__':
+    main()
