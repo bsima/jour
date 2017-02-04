@@ -50,6 +50,20 @@ class Entry(object):
     def __init__(self, date, journal_dir):
         self.date = date
         self.path = os.path.join(os.sep, journal_dir, date)
+        self.content = self._parse_content()
+        self.tags = self._parse_tags() if self.content is not None else None
+
+    def _parse_content(self):
+        if os.path.exists(self.path):
+            with open(self.path) as f:
+                return f.readlines()
+        else:
+            return None
+
+    def _parse_tags(self):
+        parse_tags = lambda s: [w.strip() for w in s.strip("tags:").split(",")]
+        tags = [parse_tags(l) for l in self.content if "tags" in l]
+        return tags[0] if len(tags) > 0 else None
 
 
 class dateAction(argparse.Action):
