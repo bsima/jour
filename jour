@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 import argparse
 import configparser
-import datetime
+from datetime import datetime
 import logging
 import os
 from os.path import expanduser
@@ -104,7 +104,7 @@ def check(journal_dir):
         askToMakeDir(journal_dir)
 
 
-def date(dt, conf):
+def format_date(dt, conf):
     """Takes a datetime object and returns a string using the configured format."""
     def fmt(n):
         return "{0:02d}".format(n)
@@ -188,8 +188,6 @@ def write_entry(args, conf):
 # CLI #######################################################################
 def main():
     """Main function"""
-    conf = load_config()
-
     cli = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=__doc__
@@ -198,8 +196,15 @@ def main():
     cli.add_argument(
         '-d',
         '--date',
-        default=date(datetime.datetime.now(), conf),
-        help="Set the date for the entry. Defaults to today."
+        default=datetime.now().strftime('%Y-%m-%d'),
+        help="Set the date for the entry (YYYY-MM-DD). Defaults to today."
+    )
+
+    cli.add_argument(
+        '-c',
+        '--config',
+        default=None,
+        help="Full path to configuration file."
     )
 
     commands = cli.add_subparsers(dest="command")
@@ -208,6 +213,13 @@ def main():
     commands.add_parser('read').set_defaults(command=read_entry)
 
     args = cli.parse_args()
+
+    conf = load_config(args.config)
+
+    # Reformat the date according to the config file
+    if args.date:
+        args.date = format_date(datetime.strptime(args.date, '%Y-%m-%d'), conf)
+
     if not args.command:
         check(get_config_option(conf, 'journal_dir'))
         write_entry(args, conf)
