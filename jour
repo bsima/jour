@@ -129,7 +129,7 @@ def list_entries(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
     for e in sorted(entries):
-        entry = Entry(e)
+        entry = Entry(e, journal_dir)
         if entry.tags is not None:
             print("{0} : {1}".format(entry.date, ", ".join(entry.tags)))
         else:
