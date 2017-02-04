@@ -44,16 +44,19 @@ DEFAULT_FORMAT = '{y}.{m}.{d}'
 
 
 class Entry(object):
-    """
-    Represents a journal entry.
-    """
+    """Represents a journal entry."""
     def __init__(self, date, journal_dir):
+        """
+        Create a new Entry object initialized to the given date and the
+        corresponding journal file if it exists.
+        """
         self.date = date
         self.path = os.path.join(os.sep, journal_dir, date)
         self.content = self._parse_content()
         self.tags = self._parse_tags() if self.content is not None else None
 
     def _parse_content(self):
+        """Parses the file to a list of lines."""
         if os.path.exists(self.path):
             with open(self.path) as f:
                 return f.readlines()
@@ -61,6 +64,7 @@ class Entry(object):
             return None
 
     def _parse_tags(self):
+        """Checks the file for a tags section and lists the tags if any."""
         tags = [
             [w.strip() for w in line.strip("tags:").split(",")]
             for line in self.content if "tags" in line
@@ -78,6 +82,12 @@ class dateAction(argparse.Action):
 
 
 def askToMakeDir(journal_dir, retries=4, reminder='Please try again!'):
+    """
+    Asks the user to create the journal directory.
+
+    Will ask the user (retries) times or until they enter y or n.
+    If the user enters anything other than y or n (reminder) will be printed.
+    """
     while True:
         ok = input('Can not find journal dir. Wanna make it? ')
         if ok in ('y', 'ye', 'yes', 'Y'):
@@ -93,12 +103,16 @@ def askToMakeDir(journal_dir, retries=4, reminder='Please try again!'):
 
 
 def check(journal_dir):
+    """
+    Checks whether the journal directory exists and prompts the user to create
+    it if it doesn't.
+    """
     if not os.path.exists(journal_dir):
         askToMakeDir(journal_dir)
 
 
 def date(dt, conf):
-    "Takes a datetime object and returns a string formatted an entry."
+    """Takes a datetime object and returns a string using the configured format."""
     def fmt(n):
         return "{0:02d}".format(n)
 
@@ -142,6 +156,7 @@ def get_config_option(conf, key):
 
 # Commands ###################################################################
 def list_entries(args, conf):
+    """Prints a list of journal entries."""
     journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
     for e in sorted(entries):
@@ -154,6 +169,7 @@ def list_entries(args, conf):
 
 
 def read_entry(args, conf):
+    """Prints today's journal entry."""
     journal_dir = get_config_option(conf, 'journal_dir')
     pager = get_config_option(conf, 'pager')
     e = Entry(args.date, journal_dir)
@@ -167,6 +183,7 @@ def read_entry(args, conf):
 
 
 def write_entry(args, conf):
+    """Opens today's journal entry in the editor."""
     journal_dir = get_config_option(conf, 'journal_dir')
     editor = get_config_option(conf, 'editor')
     e = Entry(args.date, journal_dir)
@@ -176,6 +193,7 @@ def write_entry(args, conf):
 
 # CLI #######################################################################
 def main():
+    """Main function"""
     conf = load_config()
 
     cli = argparse.ArgumentParser(
