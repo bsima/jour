@@ -176,11 +176,8 @@ def main():
 
     commands = cli.add_subparsers(dest="command")
 
-    ls = commands.add_parser('ls')
-    ls.set_defaults(command=list_entries)
-
-    read = commands.add_parser('read')
-    read.set_defaults(command=read_entry)
+    commands.add_parser('ls').set_defaults(command=list_entries)
+    commands.add_parser('read').set_defaults(command=read_entry)
 
     args = cli.parse_args()
     if not args.command:
