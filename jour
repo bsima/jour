@@ -34,7 +34,6 @@ logging.basicConfig(
     stream=sys.stderr
 )
 
-logging.debug(['sys.argv', sys.argv])
 
 EDITOR = os.environ.get('EDITOR', '/usr/bin/vi')
 PAGER = os.environ.get('PAGER', '/bin/more')
@@ -129,17 +128,26 @@ def get_config_option(conf, key):
 def list_entries(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
-    for entry in sorted(entries):
-        print(entry)
+    for e in sorted(entries):
+        entry = Entry(e)
+        if entry.tags is not None:
+            print("{0} : {1}".format(entry.date, ", ".join(entry.tags)))
+        else:
+            print(entry.date)
+    exit(0)
 
 
 def read_entry(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     pager = get_config_option(conf, 'pager')
     e = Entry(args.date, journal_dir)
-    print(e.path)
-    print(pager)
-    subprocess.call([pager, e.path])
+    if e.content is not None:
+        print(e.path)
+        subprocess.call([pager, e.path])
+        exit(0)
+    else:
+        print("You haven't journaled yet today!")
+        exit(1)
 
 
 def write_entry(args, conf):
@@ -147,6 +155,7 @@ def write_entry(args, conf):
     editor = get_config_option(conf, 'editor')
     e = Entry(args.date, journal_dir)
     subprocess.call([editor, e.path])
+    exit(0)
 
 
 # CLI #######################################################################
