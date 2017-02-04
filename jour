@@ -36,7 +36,6 @@ logging.basicConfig(
     stream=sys.stderr
 )
 
-logging.debug(['sys.argv', sys.argv])
 
 EDITOR = os.environ.get('EDITOR', '/usr/bin/vi')
 PAGER = os.environ.get('PAGER', '/bin/more')
@@ -71,23 +70,37 @@ class Entry(object):
     def __init__(self, date, journal_dir):
         self.date = date
         self.path = os.path.join(os.sep, journal_dir, date)
+        self.content = self._parse_content()
+        self.tags = self._parse_tags() if self.content is not None else None
+
+    def _parse_content(self):
+        if os.path.exists(self.path):
+            with open(self.path) as f:
+                return f.readlines()
+        else:
+            return None
+
+    def _parse_tags(self):
+        parse_tags = lambda s: [w.strip() for w in s.strip("tags:").split(",")]
+        tags = [parse_tags(l) for l in self.content if "tags" in l]
+        return tags[0] if len(tags) > 0 else None
 
 
 def date(dt, conf):
-    "Takes a datetime object and returns a string formatted an entry."
+    "Takes a datetime object and returns a string formatted as an entry."
     fmt = lambda n: "{0:02d}".format(n)
     s = list(map(fmt, [dt.year, dt.month, dt.day]))
     format_string = get_config_option(conf, 'filename_format')
     return format_string.format(y=s[0], m=s[1], d=s[2])
 
 
-class dateAction(argparse.Action):
-    "TODO"
-    def __init__(self, option_strings, dest, **kwargs):
-        pass
+    class dateAction(argparse.Action):
+        "TODO"
+        def __init__(self, option_strings, dest, **kwargs):
+            pass
 
-    def __call__(self, parser, namespace, values, option_string):
-        pass
+        def __call__(self, parser, namespace, values, option_string):
+            pass
 
 
 def load_config(config_file=None):
@@ -122,23 +135,32 @@ def get_config_option(conf, key):
     else:
         return conf['DEFAULT'].get(key)
 
-## Commands ###################################################################
+    ## Commands ###################################################################
 
 
 def list_entries(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     entries = os.listdir(journal_dir)
-    for entry in sorted(entries):
-        print(entry)
+    for e in sorted(entries):
+        entry = Entry(e)
+        if entry.tags is not None:
+            print("{0} : {1}".format(entry.date, ", ".join(entry.tags)))
+        else:
+            print(entry.date)
+    exit(0)
 
 
 def read_entry(args, conf):
     journal_dir = get_config_option(conf, 'journal_dir')
     pager = get_config_option(conf, 'pager')
     e = Entry(args.date, journal_dir)
-    print(e.path)
-    print(pager)
-    subprocess.call([pager, e.path])
+    if e.content is not None:
+        print(e.path)
+        subprocess.call([pager, e.path])
+        exit(0)
+    else:
+        print("You haven't journaled yet today!")
+        exit(1)
 
 
 def write_entry(args, conf):
@@ -146,7 +168,7 @@ def write_entry(args, conf):
     editor = get_config_option(conf, 'editor')
     e = Entry(args.date, journal_dir)
     subprocess.call([editor, e.path])
-
+    exit(0)
 
 
 ## CLI #######################################################################
