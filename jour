@@ -61,8 +61,10 @@ class Entry(object):
             return None
 
     def _parse_tags(self):
-        parse_tags = lambda s: [w.strip() for w in s.strip("tags:").split(",")]
-        tags = [parse_tags(l) for l in self.content if "tags" in l]
+        tags = [
+            [w.strip() for w in line.strip("tags:").split(",")]
+            for line in self.content if "tags" in line
+        ]
         return tags[0] if len(tags) > 0 else None
 
 
