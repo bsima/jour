@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.5
 import argparse
 import configparser
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import os
 from os.path import expanduser
@@ -207,6 +207,13 @@ def main():
         help="Full path to configuration file."
     )
 
+    cli.add_argument(
+        '-y',
+        '--yesterday',
+        action='store_true',
+        help="Open yesterday's journal entry."
+    )
+
     commands = cli.add_subparsers(dest="command")
 
     commands.add_parser('ls').set_defaults(command=list_entries)
@@ -217,7 +224,9 @@ def main():
     conf = load_config(args.config)
 
     # Reformat the date according to the config file
-    if args.date:
+    if args.yesterday:
+        args.date = format_date(datetime.now() - timedelta(days=1), conf)
+    elif args.date:
         args.date = format_date(datetime.strptime(args.date, '%Y-%m-%d'), conf)
 
     if not args.command:
