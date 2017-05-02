@@ -11,21 +11,7 @@ import sys
 __doc__ = \
 """
 Write, read, and edit your journal. Calling jour with no arguments will open
-today's journal entry for writing.
-
-jour relies on a few environment variables:
-
-    $EDITOR - for editing a journal entries.
-        Default: /usr/bin/vi
-
-    $PAGER - for reading journal entries.
-        Default: /bin/more
-
-    $JOURNAL_DIR - the directory to store your journal entries.
-        Default: ~/journal
-
-The default naming schema for new entries is <year>.<month>.<day> with each
-number zero-padded properly. Currently there is no option to change this.
+today's journal entry for writing. For configuration options, see example.conf
 """
 
 EDITOR = os.environ.get('EDITOR', '/usr/bin/vi')
