@@ -158,7 +158,7 @@ def read_entry(args, conf):
         subprocess.call([pager, e.path])
         exit(0)
     else:
-        print("You haven't journaled yet today!")
+        print("No journal entry found for {}.".format(args.date))
         exit(1)
 
 
